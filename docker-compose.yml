@@ -1,0 +1,101 @@
+networks:
+  chat-app-network:  
+      driver: bridge  
+
+volumes:
+  chat-app-volume:  
+      driver: local 
+
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: chat-nginx
+    restart: unless-stopped
+    tty: true
+    ports:
+        - 80:80
+        - 443:443
+    volumes: 
+        - ./:/var/www/html:cached
+        - ./.docker/nginx:/etc/nginx/conf.d
+        - ./.docker/nginx/ssl:/etc/nginx/conf.d/ssl
+    depends_on: 
+        - php
+    networks: 
+        - chat-app-network
+      
+  php:
+    build:
+       context: ./.docker/php
+       dockerfile: DockerFile 
+    container_name: chat-php     
+    restart: unless-stopped
+    tty: true
+    volumes:
+       - ./:/var/www/html:cached
+       - ./.docker/php/php-fpm.ini:/user/local/etc/php/conf.d/custom.ini
+       - ~/.ssh:/root/.ssh
+    depends_on: 
+        - postgres
+        - redis   
+    networks: 
+      - chat-app-network   
+
+  postgres:    
+    image: postgres:latest
+    container_name: chat-db
+    environment:
+      POSTGRES_USER: chat_app_db_user
+      POSTGRES_PASSWORD: 111111
+      POSTGRES_DB: chat_app_db
+    ports:
+      - "5432:5432"  
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data  
+    networks: 
+      - chat-app-network
+
+  redis:
+    image: redis:alpine
+    container_name: chat-redis
+    restart: unless-stopped
+    ports:
+       - 6380:6379
+    volumes:
+       - ./data/redis:/data  
+    networks: 
+      - chat-app-network   
+
+  composer: 
+    image: composer:latest
+    container_name: chat-composer
+    volumes:
+      - ./:/var/www/html
+    working_dir: /var/www/html
+    command: ["composer", "install", "--ignore-platform-reqs"]
+    depends_on:
+      - php
+    networks:
+      - chat-app-network
+
+  artisan:
+    build:
+      context: ./.docker/php
+      dockerfile: DockerFile 
+    container_name: chat-artisan
+    volumes:
+      - ./:/var/www/html
+    working_dir: /var/www/html
+    entrypoint: ["php", "artisan"]
+    networks:
+      - chat-app-network   
+
+  npm:
+    image: node:latest
+    container_name: chat-npm
+    volumes:
+      - ./:/var/www//html
+    working_dir: /var/www/html
+    entrypoint: ["npm"]  
+    networks:
+      - chat-app-network                  
