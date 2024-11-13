@@ -16,7 +16,7 @@ services:
         - 80:80
         - 443:443
     volumes: 
-        - ./:/var/www/html:cached
+        - ./src:/var/www/html:cached
         - ./.docker/nginx:/etc/nginx/conf.d
         - ./.docker/nginx/ssl:/etc/nginx/conf.d/ssl
     depends_on: 
@@ -32,7 +32,7 @@ services:
     restart: unless-stopped
     tty: true
     volumes:
-       - ./:/var/www/html:cached
+       - ./src:/var/www/html:cached
        - ./.docker/php/php-fpm.ini:/user/local/etc/php/conf.d/custom.ini
        - ~/.ssh:/root/.ssh
     depends_on: 
@@ -70,7 +70,7 @@ services:
     image: composer:latest
     container_name: chat-composer
     volumes:
-      - ./:/var/www/html
+      - ./src:/var/www/html
     working_dir: /var/www/html
     command: ["composer", "install", "--ignore-platform-reqs"]
     depends_on:
@@ -84,7 +84,7 @@ services:
       dockerfile: DockerFile 
     container_name: chat-artisan
     volumes:
-      - ./:/var/www/html
+      - ./src:/var/www/html
     working_dir: /var/www/html
     entrypoint: ["php", "artisan"]
     networks:
@@ -94,7 +94,7 @@ services:
     image: node:latest
     container_name: chat-npm
     volumes:
-      - ./:/var/www//html
+      - ./src:/var/www//html
     working_dir: /var/www/html
     entrypoint: ["npm"]  
     networks:
